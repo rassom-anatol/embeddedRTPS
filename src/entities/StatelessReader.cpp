@@ -63,14 +63,14 @@ bool StatelessReader::addNewMatchedWriter(const WriterProxy &newProxy) {
   SLR_LOG("Adding WriterProxy");
   printGuid(newProxy.remoteWriterGuid);
   printf("\n");
-#endif
+#endif //SLR_VERBOSE
   return m_proxies.add(newProxy);
 }
 
 bool StatelessReader::onNewHeartbeat(const SubmessageHeartbeat &,
                                      const GuidPrefix_t &) {
   // nothing to do
-  return true;
+  return false;
 }
 
 bool StatelessReader::onNewGapMessage(const SubmessageGap &msg,

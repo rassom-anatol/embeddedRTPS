@@ -99,7 +99,7 @@ void StatelessWriterT<NetworkDriver>::reset() {
 template <typename NetworkDriver>
 const CacheChange *StatelessWriterT<NetworkDriver>::newChange(
     rtps::ChangeKind_t kind, const uint8_t *data, DataSize_t size,
-    bool inLineQoS, bool markDisposedAfterWrite) {
+    Guid_t related_guid, SequenceNumber_t related_sequence_no) {
   INIT_GUARD();
   if (isIrrelevant(kind)) {
     return nullptr;
@@ -117,7 +117,7 @@ const CacheChange *StatelessWriterT<NetworkDriver>::newChange(
     }
   }
 
-  auto *result = m_history.addChange(data, size);
+  auto *result = m_history.addChange(data, size, related_guid, related_sequence_no);
   if (mp_threadPool != nullptr) {
     mp_threadPool->addWorkload(this);
   }
@@ -202,7 +202,9 @@ void StatelessWriterT<NetworkDriver>::progress() {
         MessageFactory::addSubMessageData(info.buffer, next->data, false,
                                           next->sequenceNumber,
                                           m_attributes.endpointGuid.entityId,
-                                          reid); // TODO
+                                          reid,
+                                          next->relatedWriterGuid,
+                                          next->relatedSequenceNumber); // TODO
       }
 
       // Just usable for IPv4

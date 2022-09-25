@@ -120,8 +120,8 @@ template <class NetworkDriver> void StatefulWriterT<NetworkDriver>::reset() {
 
 template <class NetworkDriver>
 const rtps::CacheChange *StatefulWriterT<NetworkDriver>::newChange(
-    ChangeKind_t kind, const uint8_t *data, DataSize_t size, bool inLineQoS,
-    bool markDisposedAfterWrite) {
+    rtps::ChangeKind_t kind, const uint8_t *data, DataSize_t size,
+    Guid_t related_guid, SequenceNumber_t related_sequence_no) {
   INIT_GUARD()
   if (isIrrelevant(kind)) {
     return nullptr;
@@ -142,8 +142,7 @@ const rtps::CacheChange *StatefulWriterT<NetworkDriver>::newChange(
     }
   }
 
-  auto *result =
-      m_history.addChange(data, size, inLineQoS, markDisposedAfterWrite);
+  auto *result = m_history.addChange(data, size, related_guid, related_sequence_no);
   if (mp_threadPool != nullptr) {
     mp_threadPool->addWorkload(this);
   }
@@ -300,9 +299,23 @@ bool StatefulWriterT<NetworkDriver>::sendData(const ReaderProxy &reader,
   info.destAddr = locator.getIp4Address();
   info.destPort = (Ip4Port_t)locator.port;
 
-  MessageFactory::addSubMessageData(
-      info.buffer, next->data, next->inLineQoS, next->sequenceNumber,
-      m_attributes.endpointGuid.entityId, reader.remoteReaderGuid.entityId);
+  {
+    Lock lock(m_mutex);
+    const CacheChange *next = m_history.getChangeBySN(snMissing);
+    if (next == nullptr) {
+
+      SFW_LOG("Couldn't get a CacheChange with SN (%i,%u)\n", snMissing.high,
+              snMissing.low);
+
+      return false;
+    }
+
+    MessageFactory::addSubMessageData(
+        info.buffer, next->data, false, next->sequenceNumber,
+        m_attributes.endpointGuid.entityId, reader.remoteReaderGuid.entityId,
+        next->relatedWriterGuid, next->relatedSequenceNumber);
+  }
+
   m_transport->sendPacket(info);
 
   return true;
@@ -357,11 +370,28 @@ bool StatefulWriterT<NetworkDriver>::sendDataWRMulticast(
       info.destPort = (Ip4Port_t)locator.port;
     }
 
-    EntityId_t reid;
-    if (reader.useMulticast) {
-      reid = ENTITYID_UNKNOWN;
-    } else {
-      reid = reader.remoteReaderGuid.entityId;
+    {
+      Lock lock(m_mutex);
+      const CacheChange *next = m_history.getChangeBySN(snMissing);
+      if (next == nullptr) {
+
+        SFW_LOG("Couldn't get a CacheChange with SN (%i,%u)\n", snMissing.high,
+                snMissing.low);
+
+        return false;
+      }
+
+      EntityId_t reid;
+      if (reader.useMulticast) {
+        reid = ENTITYID_UNKNOWN;
+      } else {
+        reid = reader.remoteReaderGuid.entityId;
+      }
+
+      MessageFactory::addSubMessageData(
+          info.buffer, next->data, false, next->sequenceNumber,
+          m_attributes.endpointGuid.entityId, reid,
+          next->relatedWriterGuid, next->relatedSequenceNumber);
     }
 
     MessageFactory::addSubMessageData(info.buffer, next->data, next->inLineQoS,

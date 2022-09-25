@@ -78,7 +78,7 @@ bool TopicData::readFromUcdrBuffer(ucdrBuffer &buffer) {
     case ParameterId::PID_RELIABILITY:
       ucdr_deserialize_uint32_t(&buffer,
                                 reinterpret_cast<uint32_t *>(&reliabilityKind));
-      buffer.iterator += 8;
+      ucdr_advance_buffer(&buffer, 8);
       // TODO Skip 8 bytes. don't know what they are yet
       break;
     case ParameterId::PID_SENTINEL:
@@ -131,13 +131,10 @@ bool TopicData::readFromUcdrBuffer(ucdrBuffer &buffer) {
       }
     } break;
     default:
-      buffer.iterator += length;
-      buffer.last_data_size = 1;
+      ucdr_advance_buffer(&buffer, length);
     }
 
-    uint32_t alignment = ucdr_buffer_alignment(&buffer, 4);
-    buffer.iterator += alignment;
-    buffer.last_data_size = 4; // 4 Byte alignment per element
+    ucdr_align_to(&buffer, 4);
   }
   return ucdr_buffer_remaining(&buffer) == 0;
 }

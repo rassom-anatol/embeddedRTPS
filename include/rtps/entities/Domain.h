@@ -38,7 +38,7 @@ Author: i11 - Embedded Software, RWTH Aachen University
 namespace rtps {
 class Domain {
 public:
-  Domain();
+  Domain(uint8_t _domainId);
   ~Domain();
 
   bool completeInit();
@@ -63,7 +63,11 @@ public:
   void printInfo();
 
 private:
+<<<<<<< HEAD
   friend class SizeInspector;
+=======
+  uint8_t domainId;
+>>>>>>> micro-ros
   ThreadPool m_threadPool;
   UdpDriver m_transport;
   std::array<Participant, Config::MAX_NUM_PARTICIPANTS> m_participants;

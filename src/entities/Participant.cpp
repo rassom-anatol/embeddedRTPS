@@ -50,10 +50,12 @@ Participant::Participant()
   }
 }
 Participant::Participant(const GuidPrefix_t &guidPrefix,
-                         ParticipantId_t participantId)
+                         ParticipantId_t participantId,
+                         uint8_t _domainId)
     : m_guidPrefix(guidPrefix), m_participantId(participantId),
-      m_receiver(this) {
-  if (!createMutex(&m_mutex)) {
+      m_receiver(this),
+      domainId(_domainId) {
+  if (sys_mutex_new(&m_mutex) != ERR_OK) {
     while (1)
       ;
   }
@@ -62,9 +64,11 @@ Participant::Participant(const GuidPrefix_t &guidPrefix,
 Participant::~Participant() { m_spdpAgent.stop(); }
 
 void Participant::reuse(const GuidPrefix_t &guidPrefix,
-                        ParticipantId_t participantId) {
+                        ParticipantId_t participantId,
+                        uint8_t _domainId) {
   m_guidPrefix = guidPrefix;
   m_participantId = participantId;
+  domainId = _domainId;
 }
 
 bool Participant::isValid() {

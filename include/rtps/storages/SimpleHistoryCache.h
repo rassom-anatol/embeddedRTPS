@@ -41,11 +41,12 @@ template <uint16_t SIZE> class SimpleHistoryCache {
 public:
   SimpleHistoryCache() = default;
 
-  bool isFull() const {
-    uint16_t it = m_head;
-    incrementIterator(it);
-    return it == m_tail;
-  }
+  bool isFull() const;
+  const CacheChange *addChange(const uint8_t *data, DataSize_t size, Guid_t related_guid = GUID_UNKNOWN,
+                               SequenceNumber_t related_sequence_no = SEQUENCENUMBER_UNKNOWN);
+  void dropOldest();
+  void removeUntilIncl(SequenceNumber_t sn);
+  const CacheChange *getChangeBySN(SequenceNumber_t sn) const;
 
   const CacheChange *addChange(const uint8_t *data, DataSize_t size,
                                bool inLineQoS, bool disposeAfterWrite) {

@@ -44,10 +44,8 @@ public:
 
   void progress() override;
   const CacheChange *newChange(ChangeKind_t kind, const uint8_t *data,
-                               DataSize_t size, bool inLineQoS = false,
-                               bool markDisposedAfterWrite = false) override;
-  bool removeFromHistory(const SequenceNumber_t &s);
-
+                               DataSize_t size, Guid_t related_guid = GUID_UNKNOWN,
+                               SequenceNumber_t related_sequence_no = SEQUENCENUMBER_UNKNOWN) override;
   void setAllChangesToUnsent() override;
   void onNewAckNack(const SubmessageAckNack &msg,
                     const GuidPrefix_t &sourceGuidPrefix) override;

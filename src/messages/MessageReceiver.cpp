@@ -142,11 +142,12 @@ bool MessageReceiver::processDataSubmessage(
   }
 
   const uint8_t *serializedData =
-      msgInfo.getPointerToCurrentPos() + SubmessageData::getRawSize();
+      msgInfo.getPointerToCurrentPos() + SubmessageData::getRawSize() + dataSubmsg.inlineQosSize;
 
   const DataSize_t size = submsgHeader.octetsToNextHeader -
                           SubmessageData::getRawSize() +
-                          SubmessageHeader::getRawSize();
+                          SubmessageHeader::getRawSize() -
+                          + dataSubmsg.inlineQosSize;
 
   RECV_LOG("Received data message size %u", (int)size);
 
@@ -178,6 +179,8 @@ bool MessageReceiver::processDataSubmessage(
     Guid_t writerGuid{sourceGuidPrefix, dataSubmsg.writerId};
     ReaderCacheChange change{ChangeKind_t::ALIVE, writerGuid,
                              dataSubmsg.writerSN, serializedData, size};
+    change.relatedWriterGuid = dataSubmsg.relatedWriterGuid;
+    change.relatedSequenceNumber = dataSubmsg.relatedSequenceNumber;
     reader->newChange(change);
   } else {
 #if RECV_VERBOSE && RTPS_GLOBAL_VERBOSE
@@ -198,9 +201,8 @@ bool MessageReceiver::processHeartbeatSubmessage(
   }
 
   Reader *reader = mp_part->getReader(submsgHB.readerId);
-  if (reader != nullptr) {
-    reader->onNewHeartbeat(submsgHB, sourceGuidPrefix);
-    mp_part->refreshRemoteParticipantLiveliness(sourceGuidPrefix);
+  if (reader != nullptr && reader->onNewHeartbeat(submsgHB, sourceGuidPrefix)) {
+    mp_part->addHeartbeat(sourceGuidPrefix);
     return true;
   } else {
     return false;

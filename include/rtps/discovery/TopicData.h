@@ -59,9 +59,25 @@ struct TopicData {
       : endpointGuid(GUID_UNKNOWN), typeName{'\0'}, topicName{'\0'},
         reliabilityKind(ReliabilityKind_t::BEST_EFFORT),
         durabilityKind(DurabilityKind_t::TRANSIENT_LOCAL) {
+  /* MERGE CONFLICT - ORIGIN
     rtps::FullLengthLocator someLocator =
         rtps::FullLengthLocator::createUDPv4Locator(
             192, 168, 0, 42, rtps::getUserUnicastPort(0));
+  */
+  // MICRO-ROS
+    rtps::Locator someLocator = rtps::Locator::createUDPv4Locator(
+        192, 168, 0, 42, rtps::getUserUnicastPort(0, 0)); // TODO: Check implications
+    unicastLocator = someLocator;
+    multicastLocator = Locator();
+  };
+
+  TopicData(uint8_t domainId)
+      : endpointGuid(GUID_UNKNOWN), typeName{'\0'}, topicName{'\0'},
+        reliabilityKind(ReliabilityKind_t::BEST_EFFORT),
+        durabilityKind(DurabilityKind_t::TRANSIENT_LOCAL) {
+    rtps::Locator someLocator = rtps::Locator::createUDPv4Locator(
+        192, 168, 0, 42, rtps::getUserUnicastPort(0, domainId));
+  // MICRO-ROS
     unicastLocator = someLocator;
     multicastLocator = FullLengthLocator();
   };

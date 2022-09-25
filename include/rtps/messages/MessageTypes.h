@@ -87,7 +87,8 @@ enum ParameterId : uint16_t {
   PID_TYPE_MAX_SIZE_SERIALIZED = 0x0060,
   PID_ENTITY_NAME = 0x0062,
   PID_KEY_HASH = 0x0070,
-  PID_STATUS_INFO = 0x0071
+  PID_STATUS_INFO = 0x0071,
+  PID_RELATED_SAMPLE_IDENTITY = 0x800f
 };
 
 enum BuildInEndpointSet : uint32_t {
@@ -177,6 +178,11 @@ struct SubmessageData {
   EntityId_t readerId;
   EntityId_t writerId;
   SequenceNumber_t writerSN;
+  size_t inlineQosSize;
+
+  Guid_t relatedWriterGuid = GUID_UNKNOWN;
+  SequenceNumber_t relatedSequenceNumber = SEQUENCENUMBER_UNKNOWN;
+
   static constexpr uint16_t getRawSize() {
     return SubmessageHeader::getRawSize() + sizeof(uint16_t) +
            sizeof(uint16_t) + (2 * 3 + 2 * 1) // EntityID

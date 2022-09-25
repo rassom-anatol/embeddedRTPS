@@ -83,8 +83,13 @@ UdpDriver::createUdpConnection(Ip4Port_t receivePort) {
 }
 
 bool UdpDriver::isSameSubnet(ip4_addr_t addr) {
+#ifdef ESP_PLATFORM
+  return (ip4_addr_netcmp(&addr, &(netif_default->ip_addr.u_addr.ip4),
+                          &(netif_default->netmask.u_addr.ip4)) != 0);
+#else
   return (ip4_addr_netcmp(&addr, &(netif_default->ip_addr),
                           &(netif_default->netmask)) != 0);
+#endif
 }
 
 bool UdpDriver::isMulticastAddress(ip4_addr_t addr) {
@@ -100,19 +105,23 @@ bool UdpDriver::joinMultiCastGroup(ip4_addr_t addr) const {
 
   {
     TcpipCoreLock lock;
-    iret = igmp_joingroup(IP_ADDR_ANY, (&addr));
+#ifdef ESP_PLATFORM
+  iret = igmp_joingroup(&IP_ADDR_ANY->u_addr.ip4, (&addr));
+#else
+  iret = igmp_joingroup(IP_ADDR_ANY, (&addr));
+#endif
   }
 
   if (iret != ERR_OK) {
 
     UDP_DRIVER_LOG("Failed to join IGMP multicast group %s\n",
-                   ipaddr_ntoa(&addr));
+                   ipaddr_ntoa((ip_addr_t*)  &addr));
 
     return false;
   } else {
 
     UDP_DRIVER_LOG("Succesfully joined  IGMP multicast group %s\n",
-                   ipaddr_ntoa(&addr));
+                   ipaddr_ntoa((ip_addr_t*) &addr));
   }
   return true;
 }
@@ -122,14 +131,20 @@ bool UdpDriver::sendPacket(const UdpConnection &conn, ip4_addr_t &destAddr,
   err_t err;
   {
     TcpipCoreLock lock;
+
+#ifdef ESP_PLATFORM
+    ip_addr_t aux = {.u_addr = {.ip4 = destAddr}, .type = IPADDR_TYPE_V4};
+    err = udp_sendto(conn.pcb, &buffer, &aux, destPort);
+#else
     err = udp_sendto(conn.pcb, &buffer, &destAddr, destPort);
+#endif
   }
 
   if (err != ERR_OK) {
     ;
 
     UDP_DRIVER_LOG("UDP TRANSMIT NOT SUCCESSFUL %s:%u size: %u err: %i\n",
-                   ipaddr_ntoa(&destAddr), destPort, buffer.tot_len, err);
+                   ipaddr_ntoa((ip_addr_t*)  &destAddr), destPort, buffer.tot_len, err);
 
     return false;
   }

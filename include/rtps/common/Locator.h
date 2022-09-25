@@ -66,6 +66,11 @@ struct FullLengthLocator {
 
   bool isValid() const { return kind != LocatorKind_t::LOCATOR_KIND_INVALID; }
 
+  void printLocator() const {
+    printf("Locator: %d.%d.%d.%d:%d\n", address[12], address[13], address[14],
+        address[15], port);
+  }
+
   bool readFromUcdrBuffer(ucdrBuffer &buffer) {
     if (ucdr_buffer_remaining(&buffer) < sizeof(FullLengthLocator)) {
       return false;
@@ -173,6 +178,32 @@ struct LocatorIPv4 {
   }
 };
 
+inline Locator getBuiltInUnicastLocator(ParticipantId_t participantId, uint8_t domainId) {
+  return Locator::createUDPv4Locator(
+      IP_ADDRESS[0], IP_ADDRESS[1], IP_ADDRESS[2],
+      IP_ADDRESS[3], getBuiltInUnicastPort(participantId, domainId));
+}
+
+inline Locator getBuiltInMulticastLocator(uint8_t domainId) {
+  return Locator::createUDPv4Locator(239, 255, 0, 1, getBuiltInMulticastPort(domainId));
+}
+
+inline Locator getUserUnicastLocator(ParticipantId_t participantId, uint8_t domainId) {
+  return Locator::createUDPv4Locator(
+      IP_ADDRESS[0], IP_ADDRESS[1], IP_ADDRESS[2],
+      IP_ADDRESS[3], getUserUnicastPort(participantId, domainId));
+}
+
+inline Locator getUserMulticastLocator(uint8_t domainId) { // this would be a unicastaddress, as
+                                           // defined in config
+  return Locator::createUDPv4Locator(
+      IP_ADDRESS[0], IP_ADDRESS[1], IP_ADDRESS[2],
+      IP_ADDRESS[3], getUserMulticastPort(domainId));
+}
+
+inline Locator getDefaultSendMulticastLocator(uint8_t domainId) {
+  return Locator::createUDPv4Locator(239, 255, 0, 1, getBuiltInMulticastPort(domainId));
+}
 } // namespace rtps
 
 #endif // RTPS_LOCATOR_T_H
